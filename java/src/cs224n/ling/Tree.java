@@ -23,6 +23,12 @@ public class Tree<L> implements Serializable, Decodable {
   private int uniqueIndex = nextUniqueIndex++;
 
 
+  public int getUniqueIndex() {
+	return uniqueIndex;
+  }
+  public void setUniqueIndex(int uniqueIndex) {
+	this.uniqueIndex = uniqueIndex;
+  }
   public List<Tree<L>> getChildren() {
     return children;
   }
