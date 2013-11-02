@@ -16,6 +16,7 @@ import cs224n.coref.Entity;
 import cs224n.coref.Mention;
 import cs224n.coref.Pronoun;
 import cs224n.coref.Sentence;
+import cs224n.coref.Util;
 import cs224n.ling.Constituent;
 import cs224n.ling.Tree;
 import cs224n.util.Pair;
@@ -72,6 +73,39 @@ public class RuleBased implements CoreferenceSystem {
 						if (m1.headWord().equals(m2.headWord())) {
 							merge = true;
 							break;
+						}
+					}
+				}
+				if (merge) {
+					mm1.addAll(mm2);
+					clusters.remove(j);
+				} else {
+					j ++;
+				}
+			}
+		}
+		
+		for(int i = 0; i < clusters.size() - 1; i ++) {
+			Set<Mention> mm1 = clusters.get(i);
+			int j = i + 1;
+			while (j < clusters.size()) {
+				Set<Mention> mm2 = clusters.get(j);
+				boolean merge = false;
+				Pair<Boolean, Boolean> truePair = Pair.make(true, true);
+				for (Mention m1 : mm1) {
+					for (Mention m2 : mm2) {
+						for (UnorderedPair<String, String> pair : candidates)
+						if (m1.gloss().indexOf(pair.getFirst()) > 0 &&
+								m2.gloss().indexOf(pair.getSecond()) > 0 &&
+								(doc.indexOfSentence(m1.sentence) - doc.indexOfSentence(m2.sentence) == -1 ||
+								 doc.indexOfSentence(m1.sentence) - doc.indexOfSentence(m2.sentence) == 0)) {
+							if (Util.haveGenderAndAreSameGender(m1, m2).equals(truePair) &&
+									Util.haveNumberAndAreSameNumber(m1, m2).equals(truePair)) {
+								
+									merge = true;
+									break;
+								
+							}
 						}
 					}
 				}
