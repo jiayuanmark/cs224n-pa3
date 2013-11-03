@@ -25,15 +25,27 @@ import cs224n.util.Pair;
 import cs224n.util.UnorderedPair;
 
 public class RuleBased implements CoreferenceSystem {
-	Set<UnorderedPair<String, String>> candidates;
+	private Set<UnorderedPair<String, String>> candidates;
+	private HashSet<UnorderedPair<String, String>> heads;
 
 	public RuleBased() {
 		candidates = new HashSet<UnorderedPair<String, String>>();
+		heads = new HashSet<UnorderedPair<String, String>>();
 	}
 
 	@Override
 	public void train(Collection<Pair<Document, List<Entity>>> trainingData) {
-		// TODO Auto-generated method stub
+		for (Pair<Document, List<Entity>> pair : trainingData) {
+			List<Entity> clusters = pair.getSecond();
+			for (Entity e : clusters) {
+				for (Pair<Mention, Mention> mentionPair : e
+						.orderedMentionPairs()) {
+					heads.add(new UnorderedPair<String, String>(mentionPair
+							.getFirst().headWord(), mentionPair.getSecond()
+							.headWord()));
+				}
+			}
+		}
 
 	}
 
@@ -64,7 +76,7 @@ public class RuleBased implements CoreferenceSystem {
 		}
 
 		// (Head token match)
-		for(int i = 0; i < clusters.size() - 1; i ++) {
+		for (int i = 0; i < clusters.size() - 1; i++) {
 			Set<Mention> mm1 = clusters.get(i);
 			int j = i + 1;
 			while (j < clusters.size()) {
@@ -82,12 +94,12 @@ public class RuleBased implements CoreferenceSystem {
 					mm1.addAll(mm2);
 					clusters.remove(j);
 				} else {
-					j ++;
+					j++;
 				}
 			}
 		}
-		
-		for(int i = 0; i < clusters.size() - 1; i ++) {
+
+		for (int i = 0; i < clusters.size() - 1; i++) {
 			Set<Mention> mm1 = clusters.get(i);
 			int j = i + 1;
 			while (j < clusters.size()) {
@@ -96,44 +108,66 @@ public class RuleBased implements CoreferenceSystem {
 				Pair<Boolean, Boolean> truePair = Pair.make(true, true);
 				for (Mention m1 : mm1) {
 					for (Mention m2 : mm2) {
-						for (UnorderedPair<String, String> pair : candidates)
-						if (pair.getFirst().indexOf(m1.gloss()) >= 0 &&
-								pair.getSecond().indexOf(m2.gloss()) >= 0 &&
-								(doc.indexOfSentence(m1.sentence) - doc.indexOfSentence(m2.sentence) == -1 ||
-								 doc.indexOfSentence(m1.sentence) - doc.indexOfSentence(m2.sentence) == 0)) {
-							if (Util.haveGenderAndAreSameGender(m1, m2).equals(truePair) &&
-									Util.haveNumberAndAreSameNumber(m1, m2).equals(truePair)) {
-								
-									merge = true;
-									break;
-								
-							}
-							Pronoun pron = Pronoun.valueOrNull(m2.headWord());
-							if (pron == null) continue;
-							if (m1.headToken().isNoun() && 
-								!Name.isName(m1.gloss()) &&
-								Util.haveNumberAndAreSameNumber(m1, m2).equals(truePair) &&
-								(pron.equals(Pronoun.IT) || pron.equals(Pronoun.ITS) || pron.equals(Pronoun.ITSELF) ||
-									pron.equals(Pronoun.THEY) || pron.equals(Pronoun.THEM) || pron.equals(Pronoun.THEIRS) ||
-									pron.equals(Pronoun.THEMSELVES) || pron.equals(Pronoun.THEIRSELVES) || pron.equals(Pronoun.THEIR))) {
+						if (Math.abs(doc.indexOfSentence(m1.sentence)
+								- doc.indexOfSentence(m2.sentence)) <= 2) {
+							if (heads.contains(UnorderedPair.make(
+									m1.headWord(), m2.headWord()))) {
 								merge = true;
 								break;
 							}
+							for (UnorderedPair<String, String> pair : candidates)
+								if (pair.getFirst().indexOf(m1.gloss()) >= 0
+										&& pair.getSecond().indexOf(m2.gloss()) >= 0
+										&& (doc.indexOfSentence(m1.sentence)
+												- doc.indexOfSentence(m2.sentence) == -1 || doc
+												.indexOfSentence(m1.sentence)
+												- doc.indexOfSentence(m2.sentence) == 0)) {
+									if (Util.haveGenderAndAreSameGender(m1, m2)
+											.equals(truePair)
+											&& Util.haveNumberAndAreSameNumber(
+													m1, m2).equals(truePair)) {
+
+										merge = true;
+										break;
+
+									}
+									Pronoun pron = Pronoun.valueOrNull(m2
+											.headWord());
+									if (pron == null)
+										continue;
+									if (m1.headToken().isNoun()
+											&& !Name.isName(m1.gloss())
+											&& Util.haveNumberAndAreSameNumber(
+													m1, m2).equals(truePair)
+											&& (pron.equals(Pronoun.IT)
+													|| pron.equals(Pronoun.ITS)
+													|| pron.equals(Pronoun.ITSELF)
+													|| pron.equals(Pronoun.THEY)
+													|| pron.equals(Pronoun.THEM)
+													|| pron.equals(Pronoun.THEIRS)
+													|| pron.equals(Pronoun.THEMSELVES)
+													|| pron.equals(Pronoun.THEIRSELVES) || pron
+														.equals(Pronoun.THEIR))) {
+										merge = true;
+										break;
+									}
+								}
 						}
 					}
-					if (merge) break;
+					if (merge)
+						break;
 				}
 				if (merge) {
 					mm1.addAll(mm2);
 					clusters.remove(j);
 				} else {
-					j ++;
+					j++;
 				}
 			}
 		}
-		
-		//Quoted rule
-		for(int i = 0; i < clusters.size() - 1; i ++) {
+
+		// Quoted rule
+		for (int i = 0; i < clusters.size() - 1; i++) {
 			Set<Mention> mm1 = clusters.get(i);
 			int j = i + 1;
 			while (j < clusters.size()) {
@@ -141,30 +175,32 @@ public class RuleBased implements CoreferenceSystem {
 				boolean merge = false;
 				for (Mention m1 : mm1) {
 					for (Mention m2 : mm2) {
-						if (m1.headToken().isQuoted() && m2.headToken().isQuoted() &&
-								Math.abs(doc.indexOfSentence(m1.sentence) - doc.indexOfSentence(m2.sentence)) == 1) {
+						if (m1.headToken().isQuoted()
+								&& m2.headToken().isQuoted()
+								&& Math.abs(doc.indexOfSentence(m1.sentence)
+										- doc.indexOfSentence(m2.sentence)) == 1) {
 							Pronoun pron1 = Pronoun.valueOrNull(m1.headWord());
 							Pronoun pron2 = Pronoun.valueOrNull(m2.headWord());
 							if (pron1 == null || pron2 == null)
 								continue;
-							if (((pron1.speaker == Speaker.FIRST_PERSON && pron2.speaker == Speaker.SECOND_PERSON)
-									|| (pron2.speaker == Speaker.FIRST_PERSON && pron1.speaker == Speaker.SECOND_PERSON))) {
+							if (((pron1.speaker == Speaker.FIRST_PERSON && pron2.speaker == Speaker.SECOND_PERSON) || (pron2.speaker == Speaker.FIRST_PERSON && pron1.speaker == Speaker.SECOND_PERSON))) {
 								merge = true;
 								break;
 							}
 						}
 					}
-					if (merge) break;
+					if (merge)
+						break;
 				}
 				if (merge) {
 					mm1.addAll(mm2);
 					clusters.remove(j);
 				} else {
-					j ++;
+					j++;
 				}
 			}
 		}
-		
+
 		List<Entity> entities = new ArrayList<Entity>();
 		for (Set<Mention> mm : clusters) {
 			Entity entity = new Entity(doc.getMentions(), mm);
@@ -175,8 +211,6 @@ public class RuleBased implements CoreferenceSystem {
 			mentions.add(mention.markCoreferent(me.get(mention)));
 		}
 		return mentions;
-		
-		
 
 	}
 
@@ -233,7 +267,8 @@ public class RuleBased implements CoreferenceSystem {
 											if (j == c.getEnd() - 1)
 												phrase += cur.words.get(j);
 											else
-												phrase += cur.words.get(j) + " ";
+												phrase += cur.words.get(j)
+														+ " ";
 										}
 										candidates
 												.add(new UnorderedPair<String, String>(
@@ -244,7 +279,8 @@ public class RuleBased implements CoreferenceSystem {
 									}
 								}
 								String phrase = "";
-								if (c.getEnd() == index - 1
+								if (c.getEnd() >= start
+										&& c.getEnd() <= index
 										&& pron.type
 												.equals(Pronoun.Type.REFLEXIVE)) {
 									for (int j = c.getStart(); j < c.getEnd(); j++) {
@@ -316,7 +352,8 @@ public class RuleBased implements CoreferenceSystem {
 										for (String w : current.getYield()) {
 											phrase += w + " ";
 										}
-										phrase = phrase.substring(0, phrase.length() - 1);
+										phrase = phrase.substring(0,
+												phrase.length() - 1);
 										candidates
 												.add(new UnorderedPair<String, String>(
 														phrase, word));
@@ -349,7 +386,7 @@ public class RuleBased implements CoreferenceSystem {
 							}
 							phrase = phrase.substring(0, phrase.length() - 1);
 							candidates.add(new UnorderedPair<String, String>(
-									phrase, word));					
+									phrase, word));
 							System.out.println("Hobbs candidate added Step 4: "
 									+ phrase + " " + word);
 						}
