@@ -14,7 +14,9 @@ import cs224n.coref.ClusteredMention;
 import cs224n.coref.Document;
 import cs224n.coref.Entity;
 import cs224n.coref.Mention;
+import cs224n.coref.Name;
 import cs224n.coref.Pronoun;
+import cs224n.coref.Pronoun.Speaker;
 import cs224n.coref.Sentence;
 import cs224n.coref.Util;
 import cs224n.ling.Constituent;
@@ -95,8 +97,8 @@ public class RuleBased implements CoreferenceSystem {
 				for (Mention m1 : mm1) {
 					for (Mention m2 : mm2) {
 						for (UnorderedPair<String, String> pair : candidates)
-						if (m1.gloss().indexOf(pair.getFirst()) > 0 &&
-								m2.gloss().indexOf(pair.getSecond()) > 0 &&
+						if (pair.getFirst().indexOf(m1.gloss()) >= 0 &&
+								pair.getSecond().indexOf(m2.gloss()) >= 0 &&
 								(doc.indexOfSentence(m1.sentence) - doc.indexOfSentence(m2.sentence) == -1 ||
 								 doc.indexOfSentence(m1.sentence) - doc.indexOfSentence(m2.sentence) == 0)) {
 							if (Util.haveGenderAndAreSameGender(m1, m2).equals(truePair) &&
@@ -106,8 +108,19 @@ public class RuleBased implements CoreferenceSystem {
 									break;
 								
 							}
+							Pronoun pron = Pronoun.valueOrNull(m2.headWord());
+							if (pron == null) continue;
+							if (m1.headToken().isNoun() && 
+								!Name.isName(m1.gloss()) &&
+								(pron.equals(Pronoun.IT) || pron.equals(Pronoun.ITS) || pron.equals(Pronoun.ITSELF) ||
+									pron.equals(Pronoun.THEY) || pron.equals(Pronoun.THEM) || pron.equals(Pronoun.THEIRS) ||
+									pron.equals(Pronoun.THEMSELVES) || pron.equals(Pronoun.THEIRSELVES) || pron.equals(Pronoun.THEIR))) {
+								merge = true;
+								break;
+							}
 						}
 					}
+					if (merge) break;
 				}
 				if (merge) {
 					mm1.addAll(mm2);
@@ -117,6 +130,40 @@ public class RuleBased implements CoreferenceSystem {
 				}
 			}
 		}
+		
+		//Quoted rule
+		for(int i = 0; i < clusters.size() - 1; i ++) {
+			Set<Mention> mm1 = clusters.get(i);
+			int j = i + 1;
+			while (j < clusters.size()) {
+				Set<Mention> mm2 = clusters.get(j);
+				boolean merge = false;
+				for (Mention m1 : mm1) {
+					for (Mention m2 : mm2) {
+						if (m1.headToken().isQuoted() && m2.headToken().isQuoted() &&
+								Math.abs(doc.indexOfSentence(m1.sentence) - doc.indexOfSentence(m2.sentence)) == 1) {
+							Pronoun pron1 = Pronoun.valueOrNull(m1.headWord());
+							Pronoun pron2 = Pronoun.valueOrNull(m2.headWord());
+							if (pron1 == null || pron2 == null)
+								continue;
+							if (((pron1.speaker == Speaker.FIRST_PERSON && pron2.speaker == Speaker.SECOND_PERSON)
+									|| (pron2.speaker == Speaker.FIRST_PERSON && pron1.speaker == Speaker.SECOND_PERSON))) {
+								merge = true;
+								break;
+							}
+						}
+					}
+					if (merge) break;
+				}
+				if (merge) {
+					mm1.addAll(mm2);
+					clusters.remove(j);
+				} else {
+					j ++;
+				}
+			}
+		}
+		
 		List<Entity> entities = new ArrayList<Entity>();
 		for (Set<Mention> mm : clusters) {
 			Entity entity = new Entity(doc.getMentions(), mm);
@@ -127,6 +174,8 @@ public class RuleBased implements CoreferenceSystem {
 			mentions.add(mention.markCoreferent(me.get(mention)));
 		}
 		return mentions;
+		
+		
 
 	}
 
