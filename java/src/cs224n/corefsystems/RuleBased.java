@@ -112,6 +112,7 @@ public class RuleBased implements CoreferenceSystem {
 							if (pron == null) continue;
 							if (m1.headToken().isNoun() && 
 								!Name.isName(m1.gloss()) &&
+								Util.haveNumberAndAreSameNumber(m1, m2).equals(truePair) &&
 								(pron.equals(Pronoun.IT) || pron.equals(Pronoun.ITS) || pron.equals(Pronoun.ITSELF) ||
 									pron.equals(Pronoun.THEY) || pron.equals(Pronoun.THEM) || pron.equals(Pronoun.THEIRS) ||
 									pron.equals(Pronoun.THEMSELVES) || pron.equals(Pronoun.THEIRSELVES) || pron.equals(Pronoun.THEIR))) {
@@ -229,7 +230,10 @@ public class RuleBased implements CoreferenceSystem {
 										String phrase = "";
 										for (int j = c.getStart(); j < c
 												.getEnd(); j++) {
-											phrase += cur.words.get(j) + " ";
+											if (j == c.getEnd() - 1)
+												phrase += cur.words.get(j);
+											else
+												phrase += cur.words.get(j) + " ";
 										}
 										candidates
 												.add(new UnorderedPair<String, String>(
@@ -244,7 +248,10 @@ public class RuleBased implements CoreferenceSystem {
 										&& pron.type
 												.equals(Pronoun.Type.REFLEXIVE)) {
 									for (int j = c.getStart(); j < c.getEnd(); j++) {
-										phrase += cur.words.get(j) + " ";
+										if (j == c.getEnd() - 1)
+											phrase += cur.words.get(j);
+										else
+											phrase += cur.words.get(j) + " ";
 									}
 									candidates
 											.add(new UnorderedPair<String, String>(
@@ -309,6 +316,7 @@ public class RuleBased implements CoreferenceSystem {
 										for (String w : current.getYield()) {
 											phrase += w + " ";
 										}
+										phrase = phrase.substring(0, phrase.length() - 1);
 										candidates
 												.add(new UnorderedPair<String, String>(
 														phrase, word));
@@ -339,8 +347,9 @@ public class RuleBased implements CoreferenceSystem {
 							for (String w : current.getYield()) {
 								phrase += w + " ";
 							}
+							phrase = phrase.substring(0, phrase.length() - 1);
 							candidates.add(new UnorderedPair<String, String>(
-									phrase, word));
+									phrase, word));					
 							System.out.println("Hobbs candidate added Step 4: "
 									+ phrase + " " + word);
 						}
