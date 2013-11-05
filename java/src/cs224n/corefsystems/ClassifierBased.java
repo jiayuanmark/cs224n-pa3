@@ -41,9 +41,11 @@ public class ClassifierBased implements CoreferenceSystem {
 			Feature.NumberMatch.class,
 			Feature.SentenceDistance.class,
 			Feature.MentionDistance.class,
+			Pair.make(Feature.IsFixedName.class, Feature.IsCandidateName.class),
 			Feature.Path.class,
 			// skeleton for how to create a pair feature
-			Pair.make(Feature.IsCandidatePron.class, Feature.IsFixedPron.class), });
+			Pair.make(Feature.CandidatePron.class, Feature.FixedPron.class), 
+		});
 
 	private LinearClassifier<Boolean, Feature> classifier;
 
@@ -90,9 +92,20 @@ public class ClassifierBased implements CoreferenceSystem {
 				return new Feature.MentionDistance(Math.abs(onPrix.doc
 						.indexOfMention(onPrix)
 						- candidate.doc.indexOfMention(candidate)));
-			} else if (clazz.equals(Feature.IsCandidatePron.class)) {
-				return new Feature.IsCandidatePron(
-						Pronoun.isSomePronoun(candidate.gloss()));
+			} else if (clazz.equals(Feature.CandidatePron.class)) {
+				Pronoun value = Pronoun.valueOrNull(candidate.gloss());
+				if (value == null) return new Feature.CandidatePron("null");
+				return new Feature.CandidatePron(value.name());
+			} else if (clazz.equals(Feature.FixedPron.class)) {
+				Pronoun value = Pronoun.valueOrNull(onPrix.gloss());
+				if (value == null) return new Feature.CandidatePron("null");
+				return new Feature.CandidatePron(value.name());
+			} else if (clazz.equals(Feature.IsFixedName.class)) {
+				return new Feature.IsFixedName(
+						Name.isName(candidate.gloss()));
+			} else if (clazz.equals(Feature.IsCandidateName.class)) {
+				return new Feature.IsCandidateName(
+						Name.isName(candidate.gloss()));
 			} else if (clazz.equals(Feature.Path.class)) {
 				if (onPrix.sentence == candidate.sentence
 						&& onPrix.headWordIndex != candidate.headWordIndex) {
@@ -109,9 +122,6 @@ public class ClassifierBased implements CoreferenceSystem {
 					return new Feature.Path(path);
 				}
 				return new Feature.Path("No Path");
-			} else if (clazz.equals(Feature.IsFixedPron.class)) {
-				return new Feature.IsFixedPron(Pronoun.isSomePronoun(onPrix
-						.gloss()));
 			} else {
 				throw new IllegalArgumentException("Unregistered feature: "
 						+ clazz);

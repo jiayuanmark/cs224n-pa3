@@ -215,14 +215,26 @@ public interface Feature {
 	}
 	
 	
-	public static class IsFixedPron extends Indicator {
-		public IsFixedPron(boolean isPron) {
+	public static class FixedPron extends StringIndicator {
+		public FixedPron(String isPron) {
 			super(isPron);
 		}
 	}
 	
-	public static class IsCandidatePron extends Indicator {
-		public IsCandidatePron(boolean isPron) {
+	public static class CandidatePron extends StringIndicator {
+		public CandidatePron(String isPron) {
+			super(isPron);
+		}
+	}
+	
+	public static class IsFixedName extends Indicator {
+		public IsFixedName(boolean isPron) {
+			super(isPron);
+		}
+	}
+	
+	public static class IsCandidateName extends Indicator {
+		public IsCandidateName(boolean isPron) {
 			super(isPron);
 		}
 	}
