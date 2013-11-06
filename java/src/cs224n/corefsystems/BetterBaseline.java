@@ -50,7 +50,8 @@ public class BetterBaseline implements CoreferenceSystem {
 			}
 			for (Mention m2 : doc.getMentions()) {
 				UnorderedPair<String, String> pair = new UnorderedPair<String, String>(m1.headWord(), m2.headWord());
-				if (heads.contains(pair) && !clusters.containsKey(m2)) {
+				if ((heads.contains(pair) || m1.headWord().equals(m2.headWord()))
+						&& !clusters.containsKey(m2)) {
 					m2.markCoreferent(entity);
 					clusters.put(m2, entity);
 				}

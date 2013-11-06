@@ -67,6 +67,7 @@ public class RuleBased implements CoreferenceSystem {
 			if (exact_clusters.containsKey(mentionString)) {
 				// (...add it to the cluster)
 				exact_clusters.get(mentionString).add(m);
+				System.out.println("Exact word matched! " + m.toString());
 			} else {
 				Set<Mention> mm = new HashSet<Mention>();
 				mm.add(m);
@@ -86,11 +87,14 @@ public class RuleBased implements CoreferenceSystem {
 					for (Mention m2 : mm2) {
 						if (m1.headWord().equals(m2.headWord())) {
 							merge = true;
+							System.out.println("Head word matched! " + m1.toString() + " " + m2.toString());
 							break;
 						}
 					}
+					if (merge) break;
 				}
 				if (merge) {
+					
 					mm1.addAll(mm2);
 					clusters.remove(j);
 				} else {
@@ -119,22 +123,29 @@ public class RuleBased implements CoreferenceSystem {
 								if (pair.getFirst().indexOf(m1.gloss()) >= 0
 										&& pair.getSecond().indexOf(m2.gloss()) >= 0
 										&& (doc.indexOfSentence(m1.sentence)
-												- doc.indexOfSentence(m2.sentence) == -1 || doc
+												- doc.indexOfSentence(m2.sentence) >= -3 || doc
 												.indexOfSentence(m1.sentence)
 												- doc.indexOfSentence(m2.sentence) == 0)) {
 									if (Util.haveGenderAndAreSameGender(m1, m2)
 											.equals(truePair)
 											&& Util.haveNumberAndAreSameNumber(
-													m1, m2).equals(truePair)) {
-
+													m1, m2).equals(truePair) &&
+													((m1.headWord().toLowerCase().equals("i") || m1.headWord().toLowerCase().equals("you"))
+															&& m2.headWord().toLowerCase().equals("it"))) {
 										merge = true;
+										System.out.println("Hobbs 1 matched! " + m1.toString() + " " + m2.toString());
 										break;
-
 									}
 									Pronoun pron = Pronoun.valueOrNull(m2
 											.headWord());
 									if (pron == null)
 										continue;
+									if (Name.isName(m1.headWord()) && (pron.type.equals(Pronoun.Type.POSESSIVE_PRONOUN) ||
+											pron.type.equals(Pronoun.Type.POSESSIVE_DETERMINER))) {
+										merge = true;
+										System.out.println("Hobbs 3 matched! " + m1.toString() + " " + m2.toString());
+										break;
+									}
 									if (m1.headToken().isNoun()
 											&& !Name.isName(m1.gloss())
 											&& Util.haveNumberAndAreSameNumber(
@@ -149,6 +160,7 @@ public class RuleBased implements CoreferenceSystem {
 													|| pron.equals(Pronoun.THEIRSELVES) || pron
 														.equals(Pronoun.THEIR))) {
 										merge = true;
+										System.out.println("Hobbs 2 matched! " + m1.toString() + " " + m2.toString());
 										break;
 									}
 								}
@@ -184,6 +196,7 @@ public class RuleBased implements CoreferenceSystem {
 							if (pron1 == null || pron2 == null)
 								continue;
 							if (((pron1.speaker == Speaker.FIRST_PERSON && pron2.speaker == Speaker.SECOND_PERSON) || (pron2.speaker == Speaker.FIRST_PERSON && pron1.speaker == Speaker.SECOND_PERSON))) {
+								System.out.println("Speaker matched! " + m1.toString() + " " + m2.toString());
 								merge = true;
 								break;
 							}
@@ -273,9 +286,6 @@ public class RuleBased implements CoreferenceSystem {
 										candidates
 												.add(new UnorderedPair<String, String>(
 														phrase, word));
-										System.out
-												.println("Hobbs candidate added Step 3: "
-														+ phrase + " " + word);
 									}
 								}
 								String phrase = "";
@@ -292,9 +302,6 @@ public class RuleBased implements CoreferenceSystem {
 									candidates
 											.add(new UnorderedPair<String, String>(
 													phrase, word));
-									System.out
-											.println("Hobbs candidate added Step E: "
-													+ phrase + " " + word);
 								}
 							}
 							state = "Step3";
@@ -322,9 +329,6 @@ public class RuleBased implements CoreferenceSystem {
 										candidates
 												.add(new UnorderedPair<String, String>(
 														phrase, word));
-										System.out
-												.println("Hobbs candidate added Step 7: "
-														+ phrase + " " + word);
 									}
 									for (Tree<String> c : current.getChildren()) {
 										queue.add(c);
@@ -357,9 +361,6 @@ public class RuleBased implements CoreferenceSystem {
 										candidates
 												.add(new UnorderedPair<String, String>(
 														phrase, word));
-										System.out
-												.println("Hobbs candidate added Step 8: "
-														+ phrase + " " + word);
 									}
 									if (!current.getLabel().equals("NP")
 											&& !current.getLabel().equals("S"))
@@ -387,8 +388,6 @@ public class RuleBased implements CoreferenceSystem {
 							phrase = phrase.substring(0, phrase.length() - 1);
 							candidates.add(new UnorderedPair<String, String>(
 									phrase, word));
-							System.out.println("Hobbs candidate added Step 4: "
-									+ phrase + " " + word);
 						}
 						if (!current.getLabel().equals("NP")
 								&& !current.getLabel().equals("S"))
