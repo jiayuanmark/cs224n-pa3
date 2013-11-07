@@ -67,7 +67,7 @@ public class RuleBased implements CoreferenceSystem {
 			if (exact_clusters.containsKey(mentionString)) {
 				// (...add it to the cluster)
 				exact_clusters.get(mentionString).add(m);
-				System.out.println("Exact word matched! " + m.toString());
+				//System.out.println("Exact word matched! " + m.toString());
 			} else {
 				Set<Mention> mm = new HashSet<Mention>();
 				mm.add(m);
@@ -87,7 +87,7 @@ public class RuleBased implements CoreferenceSystem {
 					for (Mention m2 : mm2) {
 						if (m1.headWord().equals(m2.headWord())) {
 							merge = true;
-							System.out.println("Head word matched! " + m1.toString() + " " + m2.toString());
+							//System.out.println("Head word matched! " + m1.toString() + " " + m2.toString());
 							break;
 						}
 					}
@@ -133,7 +133,7 @@ public class RuleBased implements CoreferenceSystem {
 													((m1.headWord().toLowerCase().equals("i") || m1.headWord().toLowerCase().equals("you"))
 															&& m2.headWord().toLowerCase().equals("it"))) {
 										merge = true;
-										System.out.println("Hobbs 1 matched! " + m1.toString() + " " + m2.toString());
+										//System.out.println("Hobbs 1 matched! " + m1.toString() + " " + m2.toString());
 										break;
 									}
 									Pronoun pron = Pronoun.valueOrNull(m2
@@ -143,7 +143,7 @@ public class RuleBased implements CoreferenceSystem {
 									if (Name.isName(m1.headWord()) && (pron.type.equals(Pronoun.Type.POSESSIVE_PRONOUN) ||
 											pron.type.equals(Pronoun.Type.POSESSIVE_DETERMINER))) {
 										merge = true;
-										System.out.println("Hobbs 3 matched! " + m1.toString() + " " + m2.toString());
+										//System.out.println("Hobbs 3 matched! " + m1.toString() + " " + m2.toString());
 										break;
 									}
 									if (m1.headToken().isNoun()
@@ -160,7 +160,7 @@ public class RuleBased implements CoreferenceSystem {
 													|| pron.equals(Pronoun.THEIRSELVES) || pron
 														.equals(Pronoun.THEIR))) {
 										merge = true;
-										System.out.println("Hobbs 2 matched! " + m1.toString() + " " + m2.toString());
+										//System.out.println("Hobbs 2 matched! " + m1.toString() + " " + m2.toString());
 										break;
 									}
 								}
@@ -196,7 +196,7 @@ public class RuleBased implements CoreferenceSystem {
 							if (pron1 == null || pron2 == null)
 								continue;
 							if (((pron1.speaker == Speaker.FIRST_PERSON && pron2.speaker == Speaker.SECOND_PERSON) || (pron2.speaker == Speaker.FIRST_PERSON && pron1.speaker == Speaker.SECOND_PERSON))) {
-								System.out.println("Speaker matched! " + m1.toString() + " " + m2.toString());
+								//System.out.println("Speaker matched! " + m1.toString() + " " + m2.toString());
 								merge = true;
 								break;
 							}
