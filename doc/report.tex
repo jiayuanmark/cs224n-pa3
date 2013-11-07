@@ -1,0 +1,194 @@
+\documentclass[letterpaper]{article}
+
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{algorithmic}
+\usepackage{algorithm}
+\usepackage{subfig}
+\usepackage{tikz}
+\usepackage{hhline}
+\usepackage{multirow}
+%\usepackage{times}
+
+\setlength\parindent{0pt}
+
+\begin{document}
+
+\title{CS224N Coreference Resolution}
+\author{
+        Jiayuan Ma \\
+        \texttt{jiayuanm@stanford.edu}
+        \and
+        Xincheng Zhang\\
+        \texttt{xinchen2@stanford.edu}
+}
+\maketitle
+
+\section{Score Intepretation}
+Our implementation of \texttt{OneCluster} and \texttt{AllSingleton} gave MUC and B3 scores in Table \ref{tab:baseline}.
+
+As indicated by their names, \texttt{AllSingleton} makes each mention to be one standalone cluster while \texttt{OneCluster} puts all mentions in one cluster. \texttt{OneCluster} should have $100\%$ recall, since it has no links to add. On the other hand, \texttt{AllSingleton} behaves the opposite, $100\%$ precision, because it requires no edges to add.
+This tells us MUC score can sometimes be tricked. Over-clustering/ segmenting will bring us meaningless high recall/precision.
+\begin{table}[h]
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|}
+\hline
+\multirow{2}{*}{Algorithm} & 
+\multicolumn{3}{c|}{MUC (dev/test)} & \multicolumn{3}{c|}{B3 (dev/test)}  \\
+\hhline{~------}
+& Precision & Recall & F1 & Precision & Recall & F1 \\
+\hline
+OneCluster & 76.94/74.39 & 100.00/100.00  & 86.97/85.32 & 16.46/12.68 & 100.00/100.00 & 28.27/22.50 \\
+\hline
+AllSingleton & 100.00/100.00 & 0.0/0.0 & 0.0/0.0 & 100.00/100.00 & 24.66/27.32 & 39.57/42.92 \\
+\hline
+\end{tabular}
+\caption{Baseline MUC and B3 scores on dev and test set}\label{tab:baseline}
+\end{center}
+\end{table}
+
+\section{Rule Based Approach}
+\subsection{Better Baseline}
+Before diving into the implementation of rule based system, we first look at the baseline code provided. The baseline code demonstrates the sample usage of the given library and implemented an exact match coreference system. In our better baseline, we implemented two rules to cluster mentions together. We found that simple head match and golden pair counting can already give us a relatively high score (see Table \ref{tab:other_algo}).
+
+\begin{itemize}
+\item \textbf{head match}
+If two mentions share the same head word, we make them into one cluster.
+\item \textbf{head pair appeared}
+We collect all golden pairs of head word matches in training phase.
+If two mentions have the same head word pair appeared during training, we make them into one cluster when testing.
+\end{itemize}
+
+\subsection{Implementation Details}
+
+We make multiple passes over the data as the instruction suggests. 
+\begin{enumerate}
+\item \textbf{Exact Match}
+Same as baseline, but leave out all the first person and second person pronoun pair.
+\item \textbf{Head Match}
+Same as better baseline, but leave out all the first person and second person pronoun pair.
+\item \textbf{Head Pair Appeared}
+Same as better baseline, but leave out all the first person and second person pronoun pair.
+\item \textbf{Hobbs Candidate Filtering}
+We ran hobbs algorithm against all the sentences in a document. It will filter out a list of word pairs as matching candidates. If the mentions matches a candidate pair, we will then check the candidate if one of the following conditions is met.
+\begin{itemize}
+\item if the two mentions agree on gender or number
+\item if the first mention is a human name and the second mention is not a neutral gender pronoun
+\item if the first mention is not a human name and the second mention did not have a clear gender
+\end{itemize}
+\item \textbf{Quoted Match} We made a special rule to deal with the first person speaker and second person speaker pronoun pairs. If both mentions are not quoted or they share the same speaker, then we simply cluster all first speaker and second speaker by exact match. Otherwise, we match the first speaker to the second speaker and vice versa.
+\end{enumerate}
+
+
+\subsection{Error Analysis}
+The rule based system does not perform very well when mentions are connected by their meanings instead of lexical feature. 
+Using rule based algorithms, we easily capture lexical structures, but it is hard for us to encode semantic relations into our rules. 
+Here are some examples.
+\begin{verbatim}
+{the crew on the U.S. carrier} -->  !{the sailors remaining on board};
+{the story} --> !{a book};
+{the U.S.} -->  !{the United States};
+{glamorous Princess Di} -->  !{Diana};
+\end{verbatim}
+For all those examples, the lexical evidence is not sufficient enough to decide their coreferences. We need to incorporate semantic information to resolve these coreferences. Hobbs algorithm is quite good at detecting the following coreferent relations.
+\begin{verbatim}
+{the story} -->  {it};
+{Yemen 's President} -->  {him}; {he}; {his};
+{investigators} -->  {their};
+\end{verbatim}
+This is because Hobbs algorithm examines the parsed tree and makes lexical rules accordingly. Also, the mentions that appear in the training set may also help us to filter out the following relations.
+\begin{verbatim}
+{the attack} -->  {the bombing of the "Cole"};
+\end{verbatim}
+However, Hobbs algorithm also introduces some ``false'' matches as follows.
+\begin{verbatim}
+{Only ninteen per cent of Americans polled} -->  !{they};
+{Your emails} -->  !{they}; !{them}; !{they}; {them};
+\end{verbatim}
+Just by staring these matches without contexts, we may say these coreferent resolutions seem perfectly fine, but they are not in very specific contexts.
+This is the inherent flaw of all rule-based systems: there is very little (or almost no) universal rule that works under any cases. Human languages are sophiscated and evolving subjects that cannot be simply characterized by some rules.
+
+\vspace{0.25cm}
+
+In summary, in order to raise our recall, we need to find more candidate pairs by using algorithm as hobbs to find the connection from one word to another by link made by pronoun. However, introduce such links may lower the precision since it is difficult to rule out false positives. Our result shows that by solely using the head match and head pair appears among traing set rules, we already had a high F1 score for both MUC and B3.
+
+\vspace{0.25cm}
+
+From a machine learning perspective, rule-based approach is a good heuristic-based model that has relatively high bias but low variance. We can observe the data and make complex rules to bring down the model bias. However, it is almost impossible to enumerate and hardcode every possibility in natural languages. Also, it is also difficult to decide which rules to believe when several rules ``fire'' together. Rule-based approach, in that sense, is limited.
+
+\section{Classifier Based Approach}
+\subsection{Features}
+One subset of our features are generated by converting rules we used in our rule-based system to indicator features in our classifier-based system. We also added the following additional features.
+\begin{itemize}
+\item \textbf{Sentence distance}: number of sentences between two mentions.
+\item \textbf{Mention distance}: number of other mentions between two mentions.
+\item \textbf{Pronoun type pair}: A pair of string indicating the pronoun type of the mention. 
+\item \textbf{Name Indicator pair}: A pair of boolean indicating if the onPrix/candidate word is a Name string
+\item \textbf{Parsing tree path}: the path between two mentions on the parsing tree.
+\item \textbf{Gender Match}: If the mentions have gender and if the gender matches
+\item \textbf{Number Match}: If the mentions have number and if the number matches
+\end{itemize}
+
+We printed the weight of each feature to understand what features influence the decision. 
+\begin{verbatim}
+    weight sorted by absolute value from large to small
+    1.792 [true] (CandidatePron(WE), CandidatePron(OUR))
+    -1.779 [true] Path(No Path)
+    1.666 [true] (CandidatePron(I), CandidatePron(MY))
+    1.628 [true] (CandidatePron(HE), CandidatePron(HIS))
+    -1.580 [true] Path(/PRP$/NP/NN)
+    1.515 [true] (CandidatePron(HE), CandidatePron(HE))
+    1.499 [true] (CandidatePron(THEY), CandidatePron(THEIR))
+    1.475 [true] HeadMatch(true)
+    1.453 [true] (CandidatePron(OUR), CandidatePron(WE))
+    1.428 [true] (CandidatePron(HIS), CandidatePron(HE))
+    1.406 [true] Path(/NNP/NP/VP/NP/PRP)
+    1.389 [true] (CandidatePron(HIS), CandidatePron(HIM))
+    ...
+\end{verbatim}
+We can see the pronoun pairs which have the same gender and same number is a very strong signal that two mentions belong to the same cluster. 
+Also, the head word match and a parsing path from ``Noun Phrase'' to ``Pronoun Phrase'' are also very good features for clustering two mentions together.
+
+\subsection{Error Analysis}
+Since we use an additive linear model for our classification task (coreferent v.s. non-coreferent), all features jointly influence the classification result.
+Although we include all rules from our rule-based systems as binary indicator features, we cannot guarantee that the ``fire'' of a single feature can $100\%$ affect the result like hobbs algorithm did in rule-based systems.
+Therefore,it is interesting to observe errors of what hobbs algorithm already discovered in our rule-based system.
+\begin{verbatim}
+{Yemen 's President} -->  !{him}; !{he}; !{his}; 
+\end{verbatim}
+Although parsing path is a strong feature, it is not guaranteed that certain path will definitely produce a coreference mention pair. For instance, the following is a good example to show. For some really long paths (long connections) that rarely appear in our training data (like \texttt{KMT} and \texttt{he} in this case), our classifier would be likely to miss that.
+\begin{verbatim}
+{KMT} --> !{He}; !{he};
+\end{verbatim}
+Since classifier-based system gives the result depending on all the features it is given, it cannot rule out a wrong mention clustering by single feature.
+The advantage of this joint additive effects is that classifier-based system has high precision because cumulative ``good'' evidences always lead to a coreference with higher confidence. On the other hand, we are still faced with the same problem as in rule-based systems: we lack the semantic clues to do coreference resolution. Possible solutions to solve this problem can be adding semantic information from some knowledge bases or doing joint semantic-parsing and coreference resolution at the same time.
+
+\section{Performance Summary}
+The results in Table \ref{tab:other_algo} were obtained by running our coreferance systems on dev and test (only once) sets using default number (100) of training documents. Both our rule-based's and classifier-based's MUC and B3 scores are on-par or beyond the given figures in the writeup.
+\begin{table}[h]
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|}
+\hline
+\multirow{2}{*}{Algorithm} & 
+\multicolumn{3}{c|}{MUC (dev/test)} & \multicolumn{3}{c|}{B3 (dev/test)} \\
+\hhline{~------}
+& Precision & Recall & F1 & Precision & Recall & F1 \\
+\hline
+Better Baseline & 78.07/78.76 & 74.41/69.91 & 76.19/74.07 
+& 66.06/73.99 & 67.37/66.51 & 66.81/70.05 \\
+\hline
+RuleBased & 79.99/80.80 & 75.15/69.60 & 77.50/74.78 
+& 65.90/75.83 & 68.93/66.68 & 67.38/70.96 \\
+\hline
+ClassifierBased & 85.37/84.05 & 72.39/65.29 & 78.35/73.49
+& 80.72/85.20 & 64.69/62.62 & 71.82/72.19 \\
+\hline
+\end{tabular}
+\caption{MUC and B3 scores of more sophisticated algorithms on dev and test set}\label{tab:other_algo}
+\end{center}
+\end{table}
+ 
+\end{document}
