@@ -235,8 +235,7 @@ public class ClassifierBased implements CoreferenceSystem {
 			Feature feature = featureInfo.first();
 			Boolean label = featureInfo.second();
 			Double magnitude = featureInfo.third();
-			// log(FORCE,new DecimalFormat("0.000").format(magnitude) + " [" +
-			// label + "] " + feature);
+			//log(FORCE,new DecimalFormat("0.000").format(magnitude) + " [" + label + "] " + feature);
 		}
 		end_Track("Features");
 		endTrack("Training");

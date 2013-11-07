@@ -30,8 +30,8 @@
 \section{Score Intepretation}
 Our implementation of \texttt{OneCluster} and \texttt{AllSingleton} gave MUC and B3 scores in Table \ref{tab:baseline}.
 
-As indicated by their names, \texttt{AllSingleton} makes each mention to be one standalone cluster while \texttt{OneCluster} puts all mentions in one cluster. \texttt{OneCluster} should have $100\%$ recall, since it has no links to add. On the other hand, \texttt{AllSingleton} behaves the opposite, $100\%$ precision, because it requires no edges to add.
-This tells us MUC score can sometimes be tricked. Over-clustering/ segmenting will bring us meaningless high recall/precision.
+As indicated by their names, \texttt{AllSingleton} makes each mention a standalone cluster while \texttt{OneCluster} puts all mentions in one cluster. \texttt{OneCluster} should have $100\%$ recall, since it has no links to add. On the other hand, \texttt{AllSingleton} behaves the opposite, $100\%$ precision, because it requires no edges to add.
+This tells us MUC score can sometimes be tricked. Over-clustering/segmenting will bring us meaningless high recall/precision.
 \begin{table}[h]
 \begin{center}
 \begin{tabular}{|c|c|c|c|c|c|c|}
@@ -64,27 +64,37 @@ If two mentions have the same head word pair appeared during training, we make t
 
 \subsection{Implementation Details}
 
-We make multiple passes over the data as the instruction suggests. 
-\begin{enumerate}
-\item \textbf{Exact Match}
+We make multiple passes over the data as suggested by the instruction.
+
+\vspace{0.1cm}
+
+\textbf{Exact Match}
 Same as baseline, but leave out all the first person and second person pronoun pair.
-\item \textbf{Head Match}
+
+\vspace{0.1cm}
+
+\textbf{Head Match}
 Same as better baseline, but leave out all the first person and second person pronoun pair.
-\item \textbf{Head Pair Appeared}
+
+\vspace{0.1cm}
+
+\textbf{Head Pair Appeared}
 Same as better baseline, but leave out all the first person and second person pronoun pair.
-\item \textbf{Hobbs Candidate Filtering}
-We ran hobbs algorithm against all the sentences in a document. It will filter out a list of word pairs as matching candidates. If the mentions matches a candidate pair, we will then check the candidate if one of the following conditions is met.
+
+\vspace{0.1cm}
+
+\textbf{Hobbs Candidate Filtering}
+We ran Hobbs algorithm against all the sentences in a document. It will filter out a list of word pairs as matching candidates. If a mention matches a candidate pair, we will then check the candidate to see if one of the following conditions is met.
 \begin{itemize}
 \item if the two mentions agree on gender or number
 \item if the first mention is a human name and the second mention is not a neutral gender pronoun
 \item if the first mention is not a human name and the second mention did not have a clear gender
 \end{itemize}
-\item \textbf{Quoted Match} We made a special rule to deal with the first person speaker and second person speaker pronoun pairs. If both mentions are not quoted or they share the same speaker, then we simply cluster all first speaker and second speaker by exact match. Otherwise, we match the first speaker to the second speaker and vice versa.
-\end{enumerate}
+\textbf{Quoted Match} We made a special rule to deal with the first person speaker and second person speaker pronoun pairs. If both mentions are not quoted or they share the same speaker, then we simply cluster all first speaker and second speaker by exact match. Otherwise, we match the first speaker to the second speaker and vice versa.
 
 
 \subsection{Error Analysis}
-The rule based system does not perform very well when mentions are connected by their meanings instead of lexical feature. 
+The rule based system does not perform very well when mentions are connected by their meanings instead of lexical features. 
 Using rule based algorithms, we easily capture lexical structures, but it is hard for us to encode semantic relations into our rules. 
 Here are some examples.
 \begin{verbatim}
@@ -113,7 +123,7 @@ This is the inherent flaw of all rule-based systems: there is very little (or al
 
 \vspace{0.25cm}
 
-In summary, in order to raise our recall, we need to find more candidate pairs by using algorithm as hobbs to find the connection from one word to another by link made by pronoun. However, introduce such links may lower the precision since it is difficult to rule out false positives. Our result shows that by solely using the head match and head pair appears among traing set rules, we already had a high F1 score for both MUC and B3.
+In summary, in order to raise our recall, we need to find more candidate pairs by using algorithms like Hobbs algorithm to find the connection from one word to another by link made by pronoun. However, introduce such links may lower the precision since it is difficult to rule out false positives. Our result shows that by solely using the head match and head pair appears among traing set rules, we already had a high F1 score for both MUC and B3.
 
 \vspace{0.25cm}
 
@@ -141,12 +151,6 @@ We printed the weight of each feature to understand what features influence the 
     1.628 [true] (CandidatePron(HE), CandidatePron(HIS))
     -1.580 [true] Path(/PRP$/NP/NN)
     1.515 [true] (CandidatePron(HE), CandidatePron(HE))
-    1.499 [true] (CandidatePron(THEY), CandidatePron(THEIR))
-    1.475 [true] HeadMatch(true)
-    1.453 [true] (CandidatePron(OUR), CandidatePron(WE))
-    1.428 [true] (CandidatePron(HIS), CandidatePron(HE))
-    1.406 [true] Path(/NNP/NP/VP/NP/PRP)
-    1.389 [true] (CandidatePron(HIS), CandidatePron(HIM))
     ...
 \end{verbatim}
 We can see the pronoun pairs which have the same gender and same number is a very strong signal that two mentions belong to the same cluster. 
@@ -154,8 +158,8 @@ Also, the head word match and a parsing path from ``Noun Phrase'' to ``Pronoun P
 
 \subsection{Error Analysis}
 Since we use an additive linear model for our classification task (coreferent v.s. non-coreferent), all features jointly influence the classification result.
-Although we include all rules from our rule-based systems as binary indicator features, we cannot guarantee that the ``fire'' of a single feature can $100\%$ affect the result like hobbs algorithm did in rule-based systems.
-Therefore,it is interesting to observe errors of what hobbs algorithm already discovered in our rule-based system.
+Although we include all rules from our rule-based systems as binary indicator features, we cannot guarantee that the ``fire'' of a single feature can $100\%$ affect the result like Hobbs algorithm did in rule-based systems.
+Therefore,it is interesting to observe errors of what Hobbs algorithm already discovered in our rule-based system.
 \begin{verbatim}
 {Yemen 's President} -->  !{him}; !{he}; !{his}; 
 \end{verbatim}
