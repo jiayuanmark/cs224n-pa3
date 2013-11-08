@@ -31,7 +31,7 @@
 Our implementation of \texttt{OneCluster} and \texttt{AllSingleton} gave MUC and B3 scores in Table \ref{tab:baseline}.
 
 As indicated by their names, \texttt{AllSingleton} makes each mention a standalone cluster while \texttt{OneCluster} puts all mentions in one cluster. \texttt{OneCluster} should have $100\%$ recall, since it has no links to add. On the other hand, \texttt{AllSingleton} behaves the opposite, $100\%$ precision, because it requires no edges to add.
-This tells us MUC score can sometimes be tricked. Over-clustering/segmenting will bring us meaningless high recall/precision.
+This tells us both MUC and B3 scores can sometimes be tricked. Over-clustering/segmenting will bring us meaningless high recall/precision. In the case of MUC score, making large clusters (more coreference predictions) will lead to a higher score.
 \begin{table}[h]
 \begin{center}
 \begin{tabular}{|c|c|c|c|c|c|c|}
