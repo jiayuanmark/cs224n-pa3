@@ -161,9 +161,13 @@ Since we use an additive linear model for our classification task (coreferent v.
 Although we include all rules from our rule-based systems as binary indicator features, we cannot guarantee that a single ``fire'' of these features can $100\%$ affect the result like Hobbs algorithm did in rule-based systems.
 Therefore,it is interesting to observe errors of what Hobbs algorithm already discovered in our rule-based system.
 \begin{verbatim}
-{Yemen 's President} -->  !{him}; !{he}; !{his}; 
+{Yemen's President} -->  !{him}; !{he}; !{his}; 
 \end{verbatim}
-Although parsing path is a strong feature, it is not guaranteed that a certain path will definitely produce a coreference mention pair. For instance, the following is a good example to show. For some really long paths (long connections) that rarely appear in our training data (like \texttt{KMT} and \texttt{he} in this case), our classifier would be likely to miss that.
+In this example, we produced a false ``negative'' as we didn't observe many paths of this pattern during training.
+
+\vspace{0.1cm}
+
+Although parsing path is a strong feature, it is not guaranteed that a certain path will definitely produce a coreference mention pair. For instance, the following is a good example to show. For some really common paths that appear many times in our training data (like \texttt{KMT} and \texttt{he} in this case), our classifier would be likely to produce a false ``positive'' in some really special context.
 \begin{verbatim}
 {KMT} --> !{He}; !{he};
 \end{verbatim}
