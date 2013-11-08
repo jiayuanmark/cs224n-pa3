@@ -159,7 +159,7 @@ Also, the head word match and a parsing path from ``Noun Phrase'' to ``Pronoun P
 \subsection{Error Analysis}
 Since we use an additive linear model for our classification task (coreferent v.s. non-coreferent), all features jointly influence the classification results.
 Although we include all rules from our rule-based systems as binary indicator features, we cannot guarantee that a single ``fire'' of these features can $100\%$ affect the result like Hobbs algorithm did in rule-based systems.
-Therefore,it is interesting to observe errors of what Hobbs algorithm already discovered in our rule-based system.
+Therefore, it is interesting to observe errors of what Hobbs algorithm already discovered in our rule-based system.
 \begin{verbatim}
 {Yemen's President} -->  !{him}; !{he}; !{his}; 
 \end{verbatim}
